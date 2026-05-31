@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>チャリ育 - Cycle Growth</title>
+    <style>
+        :root {
+            --primary-color: #4CAF50;
+            --danger-color: #ef4444;
+            --background-color: #f5f7fa;
+            --card-color: #ffffff;
+            --text-color: #333333;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .app-container {
+            background-color: var(--card-color);
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            width: 100%;
+            max-width: 380px;
+            padding: 25px;
+            box-sizing: border-box;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            margin-top: 0;
+            color: #2c3e50;
+        }
+
+        /* キャラクター選択画面のスタイル */
+        .select-container {
+            display: flex;
+            gap: 15px;
+            margin: 25px 0;
+        }
+
+        .char-choice {
+            flex: 1;
+            border: 2px solid #e2e8f0;
+            border-radius: 15px;
+            padding: 20px 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: #f8fafc;
+        }
+
+        .char-choice:hover {
+            border-color: var(--primary-color);
+            background: #f0fdf4;
+            transform: translateY(-2px);
+        }
+
+        .choice-emoji {
+            font-size: 3.5rem;
+            margin-bottom: 10px;
+        }
+
+        .choice-name {
+            font-weight: bold;
+            color: #475569;
+        }
+
+        /* メインゲーム画面のスタイル */
+        .character-area {
+            background: linear-gradient(135deg, #e0f2fe, #bbf7d0);
+            border-radius: 15px;
+            height: 180px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+            position: relative;
+            transition: all 0.5s ease;
+        }
+
+        .character-area.dead {
+            background: linear-gradient(135deg, #e2e8f0, #cbd5e1);
+        }
+
+        .character-emoji {
+            font-size: 4rem;
+            margin-bottom: 10px;
+            transition: transform 0.3s ease;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .character-emoji img {
+            width: 4rem;
+            height: 4rem;
+            object-fit: contain;
+            display: block;
+            background-color: transparent;
+        }
+
+        .bounce {
+            animation: bounce 0.5s ease;
+        }
+        @keyframes bounce {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+
+        .character-name {
+            font-weight: bold;
+            font-size: 1.1rem;
+            background: rgba(255,255,255,0.7);
+            padding: 4px 12px;
+            border-radius: 20px;
+        }
+
+        .status-container {
+            margin-bottom: 25px;
+        }
+
+        .level-badge {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin-bottom: 8px;
+        }
+        .level-badge.dead {
+            color: var(--danger-color);
+        }
+
+        .exp-bar-bg {
+            background-color: #e2e8f0;
+            border-radius: 10px;
+            height: 16px;
+            width: 100%;
+            overflow: hidden;
+            margin-bottom: 5px;
+        }
+
+        .exp-bar-fill {
+            background-color: var(--primary-color);
+            height: 100%;
+            width: 0%;
+            transition: width 0.4s ease;
+        }
+
+        .exp-text {
+            font-size: 0.85rem;
+            color: #64748b;
+        }
+
+        .deadline-alert {
+            font-size: 0.85rem;
+            color: #b45309;
+            background-color: #fef3c7;
+            padding: 6px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 25px;
+            background-color: #f8fafc;
+            padding: 12px;
+            border-radius: 10px;
+        }
+
+        .stat-box text {
+            font-size: 0.8rem;
+            color: #64748b;
+            display: block;
+        }
+
+        .stat-box span {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #334155;
+        }
+
+        .action-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 15px 30px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            width: 100%;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(76, 175, 80, 0.2);
+            transition: transform 0.1s, background-color 0.2s;
+        }
+
+        .action-btn:active {
+            transform: scale(0.98);
+            background-color: #43a047;
+        }
+
+        .action-btn.revive {
+            background-color: #64748b;
+            box-shadow: 0 4px 6px rgba(100, 116, 139, 0.2);
+        }
+
+        .reset-btn {
+            background: none;
+            border: none;
+            color: #94a3b8;
+            margin-top: 15px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <h1>チャリ育 🚲</h1>
+
+    <div id="selection-screen" style="display: none;">
+        <p>最初に一緒に旅する相棒を選んでね！</p>
+        <div class="select-container">
+            <div class="char-choice" onclick="selectCharacter('dragon')">
+                <div class="choice-emoji">🦖</div>
+                <div class="choice-name">ドラゴン</div>
+            </div>
+            <div class="char-choice" onclick="selectCharacter('cat')">
+                <div class="choice-emoji">🐱</div>
+                <div class="choice-name">ねこ</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="main-game-screen" style="display: none;">
+        <div class="deadline-alert" id="deadline-display">生存確認中...</div>
+
+        <div class="character-area" id="char-card">
+            <div class="character-emoji" id="char-emoji">🥚</div>
+            <div class="character-name" id="char-name">タマゴ</div>
+        </div>
+
+        <div class="status-container">
+            <div class="level-badge" id="level-display">Lv.1</div>
+            <div class="exp-bar-bg">
+                <div class="exp-bar-fill" id="exp-fill"></div>
+            </div>
+            <div class="exp-text" id="exp-display">NEXT: 50 EXP</div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-box">
+                <text>累計距離</text>
+                <span id="total-dist">0</span> km
+            </div>
+            <div class="stat-box">
+                <text>通勤回数</text>
+                <span id="commute-count">0</span> 回
+            </div>
+        </div>
+
+        <button class="action-btn" id="main-button" onclick="completeCommute()">通勤完了！ (+5km)</button>
+        
+        <button class="reset-btn" onclick="resetData()">データをリセットして選び直す</button>
+    </div>
+</div>
+
+<script>
+    // 設定値
+    const COMMUTE_DISTANCE = 5; 
+    const EXP_PER_KM = 10;      
+    const EXP_PER_LEVEL = 100;  
+    const DEATH_LIMIT_DAYS = 5; 
+
+    // ★ 2つのキャラクターの進化ライン定義（卵を除く8段階）
+    const CHARACTER_DATABASE = {
+        dragon: [
+            { name: "チビ竜", emoji: "./images/doragon/1.png" },
+            { name: "はいはい竜", emoji: "./images/doragon/2.png" },
+            { name: "よちよち竜", emoji: "./images/doragon/3.png" },
+            { name: "わんぱく竜", emoji: "./images/doragon/4.png" },
+            { name: "バンダナ竜", emoji: "./images/doragon/5.png" },
+            { name: "魔導竜", emoji: "./images/doragon/6.png" },
+            { name: "チャリ通竜", emoji: "./images/doragon/7.png" },
+            { name: "竜の守護神", emoji: "./images/doragon/8.png" }
+        ],
+        cat: [
+            { name: "子猫(ベビィ)", emoji: "./images/cat/1.png" },
+            { name: "はいはい子猫", emoji: "./images/cat/2.png" },
+            { name: "よちよち子猫", emoji: "./images/cat/3.png" },
+            { name: "やんちゃ猫", emoji: "./images/cat/4.png" },
+            { name: "バンダナ猫", emoji: "./images/cat/5.png" },
+            { name: "魔導猫", emoji: "./images/cat/6.png" },
+            { name: "チャリ通猫", emoji: "./images/cat/7.png" },
+            { name: "猫の守護神", emoji: "./images/cat/8.png" }
+        ]
+    };
+
+    // アプリの状態（初期値の characterType は null）
+    let state = JSON.parse(localStorage.getItem('chari_iku_state_v3')) || {
+        characterType: null, // ★ 'dragon' or 'cat'
+        level: 1,
+        currentExp: 0,
+        totalDistance: 0,
+        commuteCount: 0,
+        lastUpdated: Date.now(), 
+        isDead: false            
+    };
+
+    // キャラクター選択処理
+    function selectCharacter(type) {
+        state.characterType = type;
+        state.lastUpdated = Date.now(); // 選択した時点から5日間のカウントスタート
+        state.isDead = false;
+        saveData();
+        updateUI();
+    }
+
+    // 生存チェック
+    function checkSurvival() {
+        if (!state.characterType || state.isDead) return;
+
+        const now = Date.now();
+        const timeDiff = now - state.lastUpdated;
+        const daysPassed = timeDiff / (1000 * 30 * 1);
+
+        if (daysPassed >= DEATH_LIMIT_DAYS) {
+            state.isDead = true;
+            saveData();
+        } else {
+            const timeLeft = DEATH_LIMIT_DAYS - daysPassed;
+            const daysLeft = Math.floor(timeLeft);
+            const hoursLeft = Math.floor((timeLeft - daysLeft) * 24);
+            
+            const deadlineEl = document.getElementById('deadline-display');
+            deadlineEl.innerText = `⚠️ あと ${daysLeft}日 ${hoursLeft}時間 以内に通勤してください！`;
+            deadlineEl.style.display = "block";
+        }
+    }
+
+    // 画面の更新処理
+    function updateUI() {
+        const selectScreen = document.getElementById('selection-screen');
+        const gameScreen = document.getElementById('main-game-screen');
+
+        // ★ キャラクターが選ばれていない場合は選択画面を表示
+        if (!state.characterType) {
+            selectScreen.style.display = "block";
+            gameScreen.style.display = "none";
+            return;
+        }
+
+        // キャラクターが選ばれている場合はメインゲーム画面を表示
+        selectScreen.style.display = "none";
+        gameScreen.style.display = "block";
+
+        checkSurvival(); 
+
+        const cardEl = document.getElementById('char-card');
+        const levelEl = document.getElementById('level-display');
+        const mainBtn = document.getElementById('main-button');
+        const deadlineEl = document.getElementById('deadline-display');
+
+        if (state.isDead) {
+            cardEl.classList.add('dead');
+            levelEl.classList.add('dead');
+            levelEl.innerText = `天国`;
+            document.getElementById('char-name').innerText = `お墓`;
+            document.getElementById('char-emoji').innerText = `🪦`;
+            document.getElementById('exp-fill').style.width = `0%`;
+            document.getElementById('exp-display').innerText = `ゲームオーバー`;
+            
+            deadlineEl.innerText = `☠️ 5日間放置したため、お亡くなりになりました...`;
+            deadlineEl.style.backgroundColor = "#fee2e2";
+            deadlineEl.style.color = "#991b1b";
+
+            mainBtn.innerText = "新しく相棒を選び直す（復活）";
+            mainBtn.className = "action-btn revive";
+            mainBtn.setAttribute("onclick", "reviveCharacter()");
+        } else {
+            cardEl.classList.remove('dead');
+            levelEl.classList.remove('dead');
+            
+            levelEl.innerText = `Lv.${state.level}`;
+            document.getElementById('total-dist').innerText = state.totalDistance.toFixed(1);
+            document.getElementById('commute-count').innerText = state.commuteCount;
+
+            const expPercentage = (state.currentExp / EXP_PER_LEVEL) * 100;
+            document.getElementById('exp-fill').style.width = `${expPercentage}%`;
+            document.getElementById('exp-display').innerText = `NEXT: ${EXP_PER_LEVEL - state.currentExp} EXP`;
+
+            // ★ 選択されたキャラクタータイプの進化ラインを取得
+            const evolutionLine = CHARACTER_DATABASE[state.characterType];
+            const currentFormIndex = Math.min(state.level - 1, evolutionLine.length - 1);
+            const currentForm = evolutionLine[currentFormIndex];
+            
+            document.getElementById('char-name').innerText = currentForm.name;
+            const emojiContainer = document.getElementById('char-emoji');
+            if (typeof currentForm.emoji === 'string' && currentForm.emoji.match(/\.(png|jpe?g|gif|webp)$/i)) {
+                emojiContainer.innerHTML = `<img src="${currentForm.emoji}" alt="${currentForm.name}">`;
+            } else {
+                emojiContainer.innerText = currentForm.emoji;
+            }
+
+            mainBtn.innerText = `通勤完了！ (+${COMMUTE_DISTANCE}km)`;
+            mainBtn.className = "action-btn";
+            mainBtn.setAttribute("onclick", "completeCommute()");
+        }
+    }
+
+    // 通勤完了ボタン
+    function completeCommute() {
+        if (state.isDead) return;
+
+        state.commuteCount += 1;
+        state.totalDistance += COMMUTE_DISTANCE;
+        state.currentExp += (COMMUTE_DISTANCE * EXP_PER_KM);
+        state.lastUpdated = Date.now();
+
+        if (state.currentExp >= EXP_PER_LEVEL) {
+            state.level += 1;
+            state.currentExp = state.currentExp - EXP_PER_LEVEL;
+            alert(`🎉 レベルアップ！ Lv.${state.level} になりました！`);
+        }
+
+        const emojiEl = document.getElementById('char-emoji');
+        emojiEl.classList.remove('bounce');
+        void emojiEl.offsetWidth; 
+        emojiEl.classList.add('bounce');
+
+        saveData();
+        updateUI();
+    }
+
+    // 復活処理（選択画面に戻す）
+    function reviveCharacter() {
+        if (confirm("新しく育て直しますか？（これまでの記録はリセットされます）")) {
+            clearState();
+        }
+    }
+
+    function saveData() {
+        localStorage.setItem('chari_iku_state_v3', JSON.stringify(state));
+    }
+
+    function resetData() {
+        if(confirm("全データをリセットして、最初のキャラクター選択に戻りますか？")) {
+            clearState();
+        }
+    }
+
+    function clearState() {
+        localStorage.removeItem('chari_iku_state_v3');
+        state = {
+            characterType: null,
+            level: 1,
+            currentExp: 0,
+            totalDistance: 0,
+            commuteCount: 0,
+            lastUpdated: Date.now(),
+            isDead: false
+        };
+        updateUI();
+    }
+
+    // 初回起動
+    updateUI();
+</script>
+
+</body>
+</html>
