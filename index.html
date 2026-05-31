@@ -79,7 +79,7 @@
         .character-area {
             background: linear-gradient(135deg, #e0f2fe, #bbf7d0);
             border-radius: 15px;
-            height: 180px;
+            height: 240px;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -94,7 +94,7 @@
         }
 
         .character-emoji {
-            font-size: 4rem;
+            font-size: 8rem;
             margin-bottom: 10px;
             transition: transform 0.3s ease;
             display: inline-flex;
@@ -103,8 +103,8 @@
         }
 
         .character-emoji img {
-            width: 4rem;
-            height: 4rem;
+            width: 8rem;
+            height: 8rem;
             object-fit: contain;
             display: block;
             background-color: transparent;
@@ -205,6 +205,9 @@
             cursor: pointer;
             box-shadow: 0 4px 6px rgba(76, 175, 80, 0.2);
             transition: transform 0.1s, background-color 0.2s;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .action-btn:active {
@@ -290,24 +293,24 @@
     // ★ 2つのキャラクターの進化ライン定義（卵を除く8段階）
     const CHARACTER_DATABASE = {
         dragon: [
-            { name: "チビ竜", emoji: "./images/doragon/1.png" },
-            { name: "はいはい竜", emoji: "./images/doragon/2.png" },
-            { name: "よちよち竜", emoji: "./images/doragon/3.png" },
-            { name: "わんぱく竜", emoji: "./images/doragon/4.png" },
-            { name: "バンダナ竜", emoji: "./images/doragon/5.png" },
-            { name: "魔導竜", emoji: "./images/doragon/6.png" },
-            { name: "チャリ通竜", emoji: "./images/doragon/7.png" },
-            { name: "竜の守護神", emoji: "./images/doragon/8.png" }
+            { name: "チビ竜", imagePath: "./images/doragon/1.png" },
+            { name: "はいはい竜", imagePath: "./images/doragon/2.png" },
+            { name: "よちよち竜", imagePath: "./images/doragon/3.png" },
+            { name: "わんぱく竜", imagePath: "./images/doragon/4.png" },
+            { name: "バンダナ竜", imagePath: "./images/doragon/5.png" },
+            { name: "魔導竜", imagePath: "./images/doragon/6.png" },
+            { name: "チャリ通竜", imagePath: "./images/doragon/7.png" },
+            { name: "竜の守護神", imagePath: "./images/doragon/8.png" }
         ],
         cat: [
-            { name: "子猫(ベビィ)", emoji: "./images/cat/1.png" },
-            { name: "はいはい子猫", emoji: "./images/cat/2.png" },
-            { name: "よちよち子猫", emoji: "./images/cat/3.png" },
-            { name: "やんちゃ猫", emoji: "./images/cat/4.png" },
-            { name: "バンダナ猫", emoji: "./images/cat/5.png" },
-            { name: "魔導猫", emoji: "./images/cat/6.png" },
-            { name: "チャリ通猫", emoji: "./images/cat/7.png" },
-            { name: "猫の守護神", emoji: "./images/cat/8.png" }
+            { name: "子猫(ベビィ)", imagePath: "./images/cat/1.png" },
+            { name: "はいはい子猫", imagePath: "./images/cat/2.png" },
+            { name: "よちよち子猫", imagePath: "./images/cat/3.png" },
+            { name: "やんちゃ猫", imagePath: "./images/cat/4.png" },
+            { name: "バンダナ猫", imagePath: "./images/cat/5.png" },
+            { name: "魔導猫", imagePath: "./images/cat/6.png" },
+            { name: "チャリ通猫", imagePath: "./images/cat/7.png" },
+            { name: "猫の守護神", imagePath: "./images/cat/8.png" }
         ]
     };
 
@@ -318,9 +321,23 @@
         currentExp: 0,
         totalDistance: 0,
         commuteCount: 0,
-        lastUpdated: Date.now(), 
-        isDead: false            
+        lastUpdated: Date.now(),
+        lastCommute: 0,
+        isDead: false
     };
+
+    const COMMUTE_COOLDOWN_MS = 1000 * 60 * 60; // 1時間
+
+    function getRemainingCooldown() {
+        return Math.max(0, COMMUTE_COOLDOWN_MS - (Date.now() - (state.lastCommute || 0)));
+    }
+
+    function formatCooldown(ms) {
+        const totalMin = Math.ceil(ms / (1000 * 60));
+        const h = Math.floor(totalMin / 60);
+        const m = totalMin % 60;
+        return h > 0 ? `${h}時間 ${m}分` : `${m}分`;
+    }
 
     // キャラクター選択処理
     function selectCharacter(type) {
@@ -337,7 +354,7 @@
 
         const now = Date.now();
         const timeDiff = now - state.lastUpdated;
-        const daysPassed = timeDiff / (1000 * 30 * 1);
+        const daysPassed = timeDiff / (1000 * 60 * 60 * 24);
 
         if (daysPassed >= DEATH_LIMIT_DAYS) {
             state.isDead = true;
@@ -411,22 +428,33 @@
             
             document.getElementById('char-name').innerText = currentForm.name;
             const emojiContainer = document.getElementById('char-emoji');
-            if (typeof currentForm.emoji === 'string' && currentForm.emoji.match(/\.(png|jpe?g|gif|webp)$/i)) {
-                emojiContainer.innerHTML = `<img src="${currentForm.emoji}" alt="${currentForm.name}">`;
+            if (typeof currentForm.imagePath === 'string' && currentForm.imagePath.match(/\.(png|jpe?g|gif|webp)$/i)) {
+                emojiContainer.innerHTML = `<img src="${currentForm.imagePath}" alt="${currentForm.name}">`;
             } else {
-                emojiContainer.innerText = currentForm.emoji;
+                emojiContainer.innerText = currentForm.emoji || '🥚';
             }
 
-            mainBtn.innerText = `通勤完了！ (+${COMMUTE_DISTANCE}km)`;
+            const remaining = getRemainingCooldown();
             mainBtn.className = "action-btn";
             mainBtn.setAttribute("onclick", "completeCommute()");
+            if (remaining > 0) {
+                mainBtn.innerText = `⏳ あと ${formatCooldown(remaining)} で通勤できます`;
+                mainBtn.disabled = true;
+                mainBtn.style.opacity = "0.5";
+            } else {
+                mainBtn.innerText = `通勤完了！ (+${COMMUTE_DISTANCE}km)`;
+                mainBtn.disabled = false;
+                mainBtn.style.opacity = "1";
+            }
         }
     }
 
     // 通勤完了ボタン
     function completeCommute() {
         if (state.isDead) return;
+        if (getRemainingCooldown() > 0) return;
 
+        state.lastCommute = Date.now();
         state.commuteCount += 1;
         state.totalDistance += COMMUTE_DISTANCE;
         state.currentExp += (COMMUTE_DISTANCE * EXP_PER_KM);
@@ -473,10 +501,14 @@
             totalDistance: 0,
             commuteCount: 0,
             lastUpdated: Date.now(),
+            lastCommute: 0,
             isDead: false
         };
         updateUI();
     }
+
+    // クールダウン表示を1分ごとに更新
+    setInterval(updateUI, 60000);
 
     // 初回起動
     updateUI();
